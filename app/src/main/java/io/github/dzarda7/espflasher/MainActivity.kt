@@ -119,11 +119,66 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun FlasherScreen(vm: FlasherViewModel) {
     val state by vm.state.collectAsState()
+    var showGuide by remember { mutableStateOf(false) }
 
     Column(
         Modifier.fillMaxSize().safeDrawingPadding().imePadding().padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = { showGuide = true }) {
+                Text("GUIDE  ?")
+            }
+        }
+
+        if (showGuide) {
+            AlertDialog(
+                onDismissRequest = { showGuide = false },
+                title = { Text("NMAX ESP32-C3 Flasher Guide") },
+                text = {
+                    Column(
+                        Modifier.verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text("1. MGA KAILANGAN", style = MaterialTheme.typography.titleSmall)
+                        Text("• ESP32-C3 development board")
+                        Text("• Android phone na may USB OTG")
+                        Text("• USB data cable (hindi charge-only cable)")
+
+                        Text("2. IKONEKTA ANG BOARD", style = MaterialTheme.typography.titleSmall)
+                        Text("• Ikabit ang OTG adapter sa phone.")
+                        Text("• Ikabit ang ESP32-C3 gamit ang USB data cable.")
+                        Text("• Payagan ang USB permission kapag nagtanong ang Android.")
+                        Text("• Hintaying lumabas ang USB device sa app.")
+
+                        Text("3. KUNG HINDI MA-DETECT: BOOT / RESET", style = MaterialTheme.typography.titleSmall)
+                        Text("• Hanapin ang BOOT at RESET/EN buttons sa board.")
+                        Text("• Subukan munang i-unplug at ikabit muli ang USB.")
+                        Text("• Kung kailangan, i-hold ang BOOT, pindutin at bitawan ang RESET/EN, saka bitawan ang BOOT.")
+                        Text("• Sa ibang board, maaaring magkaiba ang sequence o automatic na ang download mode. Sundin ang dokumentasyon ng eksaktong board.")
+
+                        Text("4. CONNECT AT FLASH", style = MaterialTheme.typography.titleSmall)
+                        Text("• Piliin ang detected ESP32-C3 at pindutin ang Connect.")
+                        Text("• Pumunta sa Flash tab.")
+                        Text("• Piliin ang tamang .bin firmware para sa ESP32-C3.")
+                        Text("• Tiyaking tama ang firmware bago pindutin ang Flash.")
+                        Text("• Hintaying matapos ang progress. Huwag tanggalin ang USB habang nagfa-flash.")
+
+                        Text("5. KAPAG MAY ERROR", style = MaterialTheme.typography.titleSmall)
+                        Text("• USB not detected: subukan ang ibang data cable o OTG adapter.")
+                        Text("• Permission error: tanggalin at ikabit muli, pagkatapos payagan ang USB access.")
+                        Text("• Flash failed: tiyaking tama ang firmware at subukan ang BOOT procedure.")
+                        Text("• Huwag mag-flash ng firmware na hindi para sa board mo.")
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showGuide = false }) {
+                        Text("CLOSE")
+                    }
+                }
+            )
+        }
+
         if (state.connectedDevice == null) {
             DeviceList(state, vm)
             StatusAndLog(state, vm)
