@@ -80,6 +80,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -192,6 +193,15 @@ fun FlasherScreen(vm: FlasherViewModel) {
             DeviceList(state, vm)
             StatusAndLog(state, vm)
             if (!state.showLog) Box(Modifier.weight(1f))
+            Text(
+                "Created by: Dj Cervania",
+                Modifier.align(Alignment.CenterHorizontally),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Text(
                 "Powered by esp-serial-flasher ${BuildConfig.FLASHER_VERSION}",
                 Modifier.align(Alignment.CenterHorizontally),
