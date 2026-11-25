@@ -79,6 +79,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -203,13 +204,13 @@ fun FlasherScreen(vm: FlasherViewModel) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                "𝕯𝖏 𝕮𝖊𝖗𝖛𝖆𝖓𝖎𝖆",
+                "Dj Cervania",
                 Modifier.align(Alignment.CenterHorizontally),
                 style = MaterialTheme.typography.bodyLarge.copy(
-                    fontFamily = FontFamily.Cursive,
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 0.3.sp,
+                    fontFamily = FontFamily(Font(R.font.pirata_one)),
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Normal,
+                    letterSpacing = 0.2.sp,
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
