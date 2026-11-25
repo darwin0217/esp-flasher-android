@@ -194,11 +194,22 @@ fun FlasherScreen(vm: FlasherViewModel) {
             StatusAndLog(state, vm)
             if (!state.showLog) Box(Modifier.weight(1f))
             Text(
-                "Created by: Dj Cervania",
+                "Created by:",
                 Modifier.align(Alignment.CenterHorizontally),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                "Dj Cervania",
+                Modifier.align(Alignment.CenterHorizontally),
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontFamily = FontFamily.Cursive,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Medium,
+                    letterSpacing = 0.3.sp,
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
