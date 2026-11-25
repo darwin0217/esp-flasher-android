@@ -203,7 +203,7 @@ fun FlasherScreen(vm: FlasherViewModel) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                "Dj Cervania",
+                "𝕯𝖏 𝕮𝖊𝖗𝖛𝖆𝖓𝖎𝖆",
                 Modifier.align(Alignment.CenterHorizontally),
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontFamily = FontFamily.Cursive,
