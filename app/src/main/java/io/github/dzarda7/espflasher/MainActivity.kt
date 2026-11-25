@@ -134,7 +134,7 @@ fun FlasherScreen(vm: FlasherViewModel) {
         if (showGuide) {
             AlertDialog(
                 onDismissRequest = { showGuide = false },
-                title = { Text("NMAX ESP32-C3 Flasher Guide") },
+                title = { Text("Multi ESP Flasher Guide") },
                 text = {
                     Column(
                         Modifier.verticalScroll(rememberScrollState()),
@@ -228,7 +228,7 @@ fun FlasherScreen(vm: FlasherViewModel) {
 @Composable
 private fun DeviceList(state: UiState, vm: FlasherViewModel) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("NMAX ESP32-C3 Flasher", Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
+        Text("Multi ESP Flasher", Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
         TextButton(onClick = vm::refreshDevices) { Text("Refresh") }
     }
     if (state.devices.isEmpty()) {
@@ -637,7 +637,7 @@ private fun ColumnScope.StatusAndLog(state: UiState, vm: FlasherViewModel) {
         if (state.showLog) {
             TextButton(onClick = {
                 context.getSystemService(ClipboardManager::class.java)
-                    .setPrimaryClip(ClipData.newPlainText("NMAX ESP32-C3 Flasher log", state.log.joinToString("\n")))
+                    .setPrimaryClip(ClipData.newPlainText("Multi ESP Flasher log", state.log.joinToString("\n")))
             }) { Text("Copy") }
         }
         if (state.log.isNotEmpty()) {
