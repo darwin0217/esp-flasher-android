@@ -15,7 +15,7 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "io.github.dzarda7.espflasher"
+        applicationId = "com.nmax.esp32flasher"
         minSdk = 26
         targetSdk = 37
         // Play Store needs an ever increasing integer: 1.2.3 -> 10203.

@@ -173,7 +173,7 @@ fun FlasherScreen(vm: FlasherViewModel) {
 @Composable
 private fun DeviceList(state: UiState, vm: FlasherViewModel) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("ESP Flasher", Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
+        Text("NMAX ESP32-C3 Flasher", Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
         TextButton(onClick = vm::refreshDevices) { Text("Refresh") }
     }
     if (state.devices.isEmpty()) {
@@ -582,7 +582,7 @@ private fun ColumnScope.StatusAndLog(state: UiState, vm: FlasherViewModel) {
         if (state.showLog) {
             TextButton(onClick = {
                 context.getSystemService(ClipboardManager::class.java)
-                    .setPrimaryClip(ClipData.newPlainText("ESP Flasher log", state.log.joinToString("\n")))
+                    .setPrimaryClip(ClipData.newPlainText("NMAX ESP32-C3 Flasher log", state.log.joinToString("\n")))
             }) { Text("Copy") }
         }
         if (state.log.isNotEmpty()) {
