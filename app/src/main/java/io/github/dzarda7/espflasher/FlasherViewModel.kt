@@ -59,6 +59,7 @@ data class UiState(
     val devices: List<UsbSerialDriver> = emptyList(),
     val connectedDevice: String? = null,
     val chipInfo: ChipInfo? = null,
+    val selectedTargetChip: String = "Auto detect",
     val images: List<FlashImage> = emptyList(),
     val readOffsetText: String = "0x0",
     val readSizeText: String = "",
@@ -84,6 +85,13 @@ data class UiState(
 
 val FLASH_BAUD_RATES = listOf(115200, 460800, 921600, 1500000, 2000000)
 const val DEFAULT_FLASH_BAUD = 921600
+
+val FLASH_TARGET_CHIPS = listOf(
+    "Auto detect",
+    "ESP8266", "ESP32", "ESP32-S2", "ESP32-C3", "ESP32-S3",
+    "ESP32-C2", "ESP32-C5", "ESP32-H2", "ESP32-C6", "ESP32-P4",
+    "ESP32-C61", "ESP32-S31", "ESP32-H21", "ESP32-H4",
+)
 
 class FlasherViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -125,6 +133,12 @@ class FlasherViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     init {
+        _state.update {
+            it.copy(
+                selectedTargetChip = app.getSharedPreferences("multi_esp_flasher", Context.MODE_PRIVATE)
+                    .getString("target_chip", "Auto detect") ?: "Auto detect"
+            )
+        }
         refreshDevices()
         ContextCompat.registerReceiver(
             app, detachReceiver, IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED), ContextCompat.RECEIVER_NOT_EXPORTED,
@@ -141,6 +155,15 @@ class FlasherViewModel(app: Application) : AndroidViewModel(app) {
             val devices = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager)
             _state.update { it.copy(devices = devices) }
         }
+    }
+
+    fun setSelectedTargetChip(chip: String) {
+        getApplication<Application>()
+            .getSharedPreferences("multi_esp_flasher", Context.MODE_PRIVATE)
+            .edit()
+            .putString("target_chip", chip)
+            .apply()
+        _state.update { it.copy(selectedTargetChip = chip) }
     }
 
     fun setImageOffset(index: Int, text: String) = _state.update {
@@ -169,14 +192,29 @@ class FlasherViewModel(app: Application) : AndroidViewModel(app) {
 
     fun addImages(uris: List<Uri>) {
         val resolver = getApplication<Application>().contentResolver
-        val names = uris.map { uri ->
-            resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-                ?.use { c -> if (c.moveToFirst()) c.getString(0) else null } ?: uri.lastPathSegment ?: "image.bin"
+        val namedUris = uris.map { uri ->
+            val name = resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+                ?: uri.lastPathSegment
+                ?: "image.bin"
+            uri to name
         }
+
+        val valid = namedUris.filter { (_, name) -> name.lowercase().endsWith(".bin") }
+        val rejected = namedUris.filterNot { (_, name) -> name.lowercase().endsWith(".bin") }
+
+        if (rejected.isNotEmpty()) {
+            log("Skipped non-.bin files: ${rejected.joinToString { it.second }}")
+        }
+        if (valid.isEmpty()) return
+
+        val validUris = valid.map { it.first }
+        val names = valid.map { it.second }
+
         _state.update { st ->
             val allNames = st.images.map { it.name } + names
             var apps = st.images.count { kind(it.name) == ImageKind.APP }
-            val added = uris.zip(names) { uri, name ->
+            val added = validUris.zip(names) { uri, name ->
                 FlashImage(uri, name, "0x%X".format(guessOffset(name, st.chipInfo?.chip, allNames, apps)))
                     .also { if (kind(name) == ImageKind.APP) apps++ }
             }
@@ -245,12 +283,55 @@ class FlasherViewModel(app: Application) : AndroidViewModel(app) {
 
     fun flash() = runTask {
         val s = flasher ?: error("Not connected")
-        val images = _state.value.images.ifEmpty { error("No binaries selected") }
+        val currentState = _state.value
+        val images = currentState.images.ifEmpty { error("No binaries selected") }
+
+        val detectedChip = currentState.chipInfo?.chip ?: error("Chip not detected")
+        val selectedChip = currentState.selectedTargetChip
+        if (selectedChip != "Auto detect" && selectedChip != detectedChip) {
+            error("Target mismatch: selected $selectedChip, detected $detectedChip. Flash cancelled.")
+        }
+
+        val invalidFiles = images.filterNot { it.name.lowercase().endsWith(".bin") }
+        if (invalidFiles.isNotEmpty()) {
+            error("Only .bin firmware files are allowed: ${invalidFiles.joinToString { it.name }}")
+        }
+
         val resolver = getApplication<Application>().contentResolver
         val loaded = images.map { img ->
             val data = resolver.openInputStream(img.uri)?.use { it.readBytes() } ?: error("Cannot read ${img.name}")
             Triple(img.name, parseOffset(img.offsetText), data)
         }
+        require(loaded.isNotEmpty()) { "No firmware data loaded" }
+
+        val ranges = loaded.map { (name, offset, data) ->
+            require(data.isNotEmpty()) { "Firmware file is empty: $name" }
+            require(offset % 0x1000 == 0) {
+                "Flash address must be 4 KB aligned: $name at 0x%X".format(offset)
+            }
+
+            val start = offset.toLong()
+            val end = start + data.size.toLong()
+
+            require(end <= Int.MAX_VALUE.toLong()) {
+                "Firmware address range is too large: $name"
+            }
+
+            currentState.chipInfo?.flashSize?.let { flashSize ->
+                require(end <= flashSize.toLong()) {
+                    "Firmware exceeds detected flash size: $name"
+                }
+            }
+
+            start to end
+        }.sortedBy { it.first }
+
+        for (i in 1 until ranges.size) {
+            require(ranges[i].first >= ranges[i - 1].second) {
+                "Firmware address ranges overlap. Check the flash offsets."
+            }
+        }
+
         val total = loaded.sumOf { it.third.size }
 
         ensureBootloader(s)
@@ -525,7 +606,19 @@ class FlasherViewModel(app: Application) : AndroidViewModel(app) {
 
         fun parseOffset(text: String): Int {
             val t = text.trim().lowercase()
-            return if (t.startsWith("0x")) t.substring(2).toLong(16).toInt() else t.toLong().toInt()
+            require(t.isNotEmpty()) { "Flash address is empty" }
+
+            val value = if (t.startsWith("0x")) {
+                require(t.length > 2) { "Invalid hexadecimal address: $text" }
+                t.substring(2).toLong(16)
+            } else {
+                t.toLong()
+            }
+
+            require(value in 0..Int.MAX_VALUE.toLong()) {
+                "Flash address must be between 0 and 0x7FFFFFFF: $text"
+            }
+            return value.toInt()
         }
     }
 }
