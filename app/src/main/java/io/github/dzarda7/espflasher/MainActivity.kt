@@ -355,17 +355,54 @@ private fun ColumnScope.FlashPage(state: UiState, vm: FlasherViewModel) {
     Text("Detected chip: ${state.chipInfo?.chip ?: "Not connected"}")
 
     state.images.forEachIndexed { i, img ->
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(img.name, Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
-            OutlinedTextField(
-                value = img.offsetText,
-                onValueChange = { vm.setImageOffset(i, it) },
-                singleLine = true,
-                enabled = !state.busy,
-                textStyle = LocalTextStyle.current.copy(fontFamily = FontFamily.Monospace),
-                modifier = Modifier.width(120.dp),
-            )
-            TextButton(onClick = { vm.removeImage(i) }, enabled = !state.busy) { Text("✕") }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(img.name, Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                OutlinedTextField(
+                    value = img.offsetText,
+                    onValueChange = { vm.setImageOffset(i, it) },
+                    singleLine = true,
+                    enabled = !state.busy,
+                    label = { Text("Address") },
+                    textStyle = LocalTextStyle.current.copy(fontFamily = FontFamily.Monospace),
+                    modifier = Modifier.width(132.dp),
+                )
+                TextButton(onClick = { vm.removeImage(i) }, enabled = !state.busy) { Text("✕") }
+            }
+            var presetExpanded by remember(img.uri) { mutableStateOf(false) }
+            Box {
+                OutlinedButton(
+                    onClick = { presetExpanded = true },
+                    enabled = !state.busy,
+                ) { Text("Address presets ▾") }
+                DropdownMenu(
+                    expanded = presetExpanded,
+                    onDismissRequest = { presetExpanded = false },
+                ) {
+                    listOf(
+                        "Merged / full image (0x0)",
+                        "Application (0x10000)",
+                        "Bootloader (chip default)",
+                        "Partition table (0x8000)",
+                        "boot_app0 (0xE000)",
+                        "Custom (keep current address)",
+                    ).forEach { preset ->
+                        DropdownMenuItem(
+                            text = { Text(preset) },
+                            onClick = {
+                                vm.setImageAddressPreset(i, preset)
+                                presetExpanded = false
+                            },
+                        )
+                    }
+                }
+                Text(
+                    "Check the firmware package instructions before flashing this address.",
+                    Modifier.padding(start = 8.dp, top = 8.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
     OutlinedButton(

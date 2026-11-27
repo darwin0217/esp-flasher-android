@@ -26,7 +26,7 @@ Just a USB-OTG cable, no computer needed.
 ## Features
 
 - ⚡ **Flash** one or more binaries at once. Offsets are filled in from ESP-IDF file names,
-  speed goes up to 2 Mbaud and every write is verified.
+  can be selected from address presets or entered manually, and every write is verified.
 - 📟 **Monitor** the serial output with ESP-IDF log colors, reset the board or send input.
 - 🔍 **Inspect** the chip: revision, flash size, MAC and security state. Read flash to a file
   or erase it.

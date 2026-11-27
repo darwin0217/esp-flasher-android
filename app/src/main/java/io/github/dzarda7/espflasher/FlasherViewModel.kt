@@ -170,6 +170,28 @@ class FlasherViewModel(app: Application) : AndroidViewModel(app) {
         it.copy(images = it.images.mapIndexed { i, img -> if (i == index) img.copy(offsetText = text) else img })
     }
 
+    /** Applies a common address preset; firmware-specific release instructions always take priority. */
+    fun setImageAddressPreset(index: Int, preset: String) {
+        val chip = _state.value.chipInfo?.chip
+        val address = when (preset) {
+            "Merged / full image (0x0)" -> 0x0
+            "Application (0x10000)" -> 0x10000
+            "Partition table (0x8000)" -> 0x8000
+            "boot_app0 (0xE000)" -> 0xE000
+            "Bootloader (chip default)" -> when (chip) {
+                "ESP32", "ESP32-S2" -> 0x1000
+                "ESP32-C5", "ESP32-P4" -> 0x2000
+                else -> return // Unknown chip: do not guess a bootloader address.
+            }
+            else -> return // Custom: leave the manually entered address unchanged.
+        }
+        _state.update {
+            it.copy(images = it.images.mapIndexed { i, img ->
+                if (i == index) img.copy(offsetText = "0x%X".format(address)) else img
+            })
+        }
+    }
+
     fun removeImage(index: Int) = _state.update { it.copy(images = it.images.filterIndexed { i, _ -> i != index }) }
 
     fun setReadOffset(text: String) = _state.update { it.copy(readOffsetText = text) }
