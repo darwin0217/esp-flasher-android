@@ -79,7 +79,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -141,33 +143,42 @@ fun FlasherScreen(vm: FlasherViewModel) {
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text("1. MGA KAILANGAN", style = MaterialTheme.typography.titleSmall)
-                        Text("• ESP32-C3 development board")
-                        Text("• Android phone na may USB OTG")
+                        Text("• Android phone na may USB OTG/USB Host support")
+                        Text("• USB OTG adapter kung kailangan")
                         Text("• USB data cable (hindi charge-only cable)")
+                        Text("• ESP8266 o suportadong ESP32-family board")
 
                         Text("2. IKONEKTA ANG BOARD", style = MaterialTheme.typography.titleSmall)
-                        Text("• Ikabit ang OTG adapter sa phone.")
-                        Text("• Ikabit ang ESP32-C3 gamit ang USB data cable.")
+                        Text("• Ikabit ang OTG adapter sa phone kung kailangan.")
+                        Text("• Ikabit ang board gamit ang USB data cable.")
                         Text("• Payagan ang USB permission kapag nagtanong ang Android.")
-                        Text("• Hintaying lumabas ang USB device sa app.")
+                        Text("• Hintaying lumabas ang device, pagkatapos pindutin ang Connect.")
 
-                        Text("3. KUNG HINDI MA-DETECT: BOOT / RESET", style = MaterialTheme.typography.titleSmall)
-                        Text("• Hanapin ang BOOT at RESET/EN buttons sa board.")
-                        Text("• Subukan munang i-unplug at ikabit muli ang USB.")
-                        Text("• Kung kailangan, i-hold ang BOOT, pindutin at bitawan ang RESET/EN, saka bitawan ang BOOT.")
-                        Text("• Sa ibang board, maaaring magkaiba ang sequence o automatic na ang download mode. Sundin ang dokumentasyon ng eksaktong board.")
+                        Text("3. PILIIN ANG TARGET CHIP", style = MaterialTheme.typography.titleSmall)
+                        Text("• Piliin ang eksaktong chip sa Target chip safety check.")
+                        Text("• Auto detect ang default; ihambing ang detected chip bago mag-flash.")
+                        Text("• Kapag may mismatch, kanselahin at tiyaking tama ang board/firmware.")
 
-                        Text("4. CONNECT AT FLASH", style = MaterialTheme.typography.titleSmall)
-                        Text("• Piliin ang detected ESP32-C3 at pindutin ang Connect.")
-                        Text("• Pumunta sa Flash tab.")
-                        Text("• Piliin ang tamang .bin firmware para sa ESP32-C3.")
-                        Text("• Tiyaking tama ang firmware bago pindutin ang Flash.")
-                        Text("• Hintaying matapos ang progress. Huwag tanggalin ang USB habang nagfa-flash.")
+                        Text("4. PILIIN AT I-FLASH ANG FIRMWARE", style = MaterialTheme.typography.titleSmall)
+                        Text("• Gumamit lamang ng .bin firmware para sa eksaktong board at chip.")
+                        Text("• Simple mode: gumamit ng isang merged .bin kung iyon ang ibinigay ng firmware author.")
+                        Text("• Advanced mode: maraming .bin; ilagay ang tamang flash address/offset sa bawat file.")
+                        Text("• Huwag hulaan ang offsets. Sundin ang firmware release instructions.")
+                        Text("• Tiyaking tama ang files at addresses bago pindutin ang Flash.")
+                        Text("• Huwag tanggalin ang USB habang nagfa-flash.")
 
-                        Text("5. KAPAG MAY ERROR", style = MaterialTheme.typography.titleSmall)
-                        Text("• USB not detected: subukan ang ibang data cable o OTG adapter.")
-                        Text("• Permission error: tanggalin at ikabit muli, pagkatapos payagan ang USB access.")
-                        Text("• Flash failed: tiyaking tama ang firmware at subukan ang BOOT procedure.")
+                        Text("5. BOOT / RESET KUNG KAILANGAN", style = MaterialTheme.typography.titleSmall)
+                        Text("• Kung hindi makapasok sa download mode, hanapin ang BOOT at RESET/EN buttons.")
+                        Text("• Sa ilang board, i-hold ang BOOT habang kumokonekta o nagsisimula ang flash.")
+                        Text("• Maaaring pindutin ang RESET/EN habang naka-hold ang BOOT, saka bitawan ang BOOT.")
+                        Text("• Iba-iba ang sequence depende sa board; sundin ang dokumentasyon ng eksaktong modelo.")
+                        Text("• Pagkatapos mag-flash, maaaring kailanganin ang RESET/EN.")
+
+                        Text("6. KAPAG MAY ERROR", style = MaterialTheme.typography.titleSmall)
+                        Text("• USB not detected: subukan ang data cable, OTG adapter, o ibang USB port.")
+                        Text("• Permission error: ikabit muli at payagan ang USB access.")
+                        Text("• Chip mismatch: piliin ang tamang target o ibalik sa Auto detect.")
+                        Text("• Flash failed: tiyaking tama ang firmware, offsets, baud rate, at BOOT procedure.")
                         Text("• Huwag mag-flash ng firmware na hindi para sa board mo.")
                     }
                 },
@@ -183,6 +194,26 @@ fun FlasherScreen(vm: FlasherViewModel) {
             DeviceList(state, vm)
             StatusAndLog(state, vm)
             if (!state.showLog) Box(Modifier.weight(1f))
+            Text(
+                "Created by:",
+                Modifier.align(Alignment.CenterHorizontally),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                "Dj Cervania",
+                Modifier.align(Alignment.CenterHorizontally),
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontFamily = FontFamily(Font(R.font.pirata_one)),
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Normal,
+                    letterSpacing = 0.2.sp,
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Text(
                 "Powered by esp-serial-flasher ${BuildConfig.FLASHER_VERSION}",
                 Modifier.align(Alignment.CenterHorizontally),
@@ -315,18 +346,63 @@ private fun ColumnScope.FlashPage(state: UiState, vm: FlasherViewModel) {
         if (uris.isNotEmpty()) vm.addImages(uris)
     }
 
+    Text("Target chip (safety check)")
+    TargetChipPicker(
+        selected = state.selectedTargetChip,
+        enabled = !state.busy,
+        onSelect = vm::setSelectedTargetChip,
+    )
+    Text("Detected chip: ${state.chipInfo?.chip ?: "Not connected"}")
+
     state.images.forEachIndexed { i, img ->
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(img.name, Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
-            OutlinedTextField(
-                value = img.offsetText,
-                onValueChange = { vm.setImageOffset(i, it) },
-                singleLine = true,
-                enabled = !state.busy,
-                textStyle = LocalTextStyle.current.copy(fontFamily = FontFamily.Monospace),
-                modifier = Modifier.width(120.dp),
-            )
-            TextButton(onClick = { vm.removeImage(i) }, enabled = !state.busy) { Text("✕") }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(img.name, Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                OutlinedTextField(
+                    value = img.offsetText,
+                    onValueChange = { vm.setImageOffset(i, it) },
+                    singleLine = true,
+                    enabled = !state.busy,
+                    label = { Text("Address") },
+                    textStyle = LocalTextStyle.current.copy(fontFamily = FontFamily.Monospace),
+                    modifier = Modifier.width(132.dp),
+                )
+                TextButton(onClick = { vm.removeImage(i) }, enabled = !state.busy) { Text("✕") }
+            }
+            var presetExpanded by remember(img.uri) { mutableStateOf(false) }
+            Box {
+                OutlinedButton(
+                    onClick = { presetExpanded = true },
+                    enabled = !state.busy,
+                ) { Text("Address presets ▾") }
+                DropdownMenu(
+                    expanded = presetExpanded,
+                    onDismissRequest = { presetExpanded = false },
+                ) {
+                    listOf(
+                        "Merged / full image (0x0)",
+                        "Application (0x10000)",
+                        "Bootloader (chip default)",
+                        "Partition table (0x8000)",
+                        "boot_app0 (0xE000)",
+                        "Custom (keep current address)",
+                    ).forEach { preset ->
+                        DropdownMenuItem(
+                            text = { Text(preset) },
+                            onClick = {
+                                vm.setImageAddressPreset(i, preset)
+                                presetExpanded = false
+                            },
+                        )
+                    }
+                }
+                Text(
+                    "Check the firmware package instructions before flashing this address.",
+                    Modifier.padding(start = 8.dp, top = 8.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
     OutlinedButton(
@@ -677,6 +753,31 @@ private fun ColumnScope.MonitorPage(state: UiState, vm: FlasherViewModel) {
             trailingIcon = { TextButton(onClick = send) { Text("Send") } },
             modifier = Modifier.fillMaxWidth(),
         )
+    }
+}
+
+@Composable
+private fun TargetChipPicker(selected: String, enabled: Boolean, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        OutlinedButton(
+            onClick = { expanded = true },
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(selected)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            FLASH_TARGET_CHIPS.forEach { chip ->
+                DropdownMenuItem(
+                    text = { Text(chip) },
+                    onClick = {
+                        onSelect(chip)
+                        expanded = false
+                    },
+                )
+            }
+        }
     }
 }
 

@@ -1,3 +1,5 @@
+import java.net.URL
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -9,6 +11,25 @@ val appVersion = "0.1.0"
 val flasherDir = rootProject.file(providers.gradleProperty("espSerialFlasherDir").get())
 val flasherVersion = flasherDir.resolve("idf_component.yml").readLines()
     .firstOrNull { it.startsWith("version:") }?.substringAfter(":")?.trim()?.trim('"') ?: "unknown"
+
+
+val downloadPirataOneFont by tasks.registering {
+    val fontFile = layout.projectDirectory.file("src/main/res/font/pirata_one.ttf")
+    outputs.file(fontFile)
+    doLast {
+        val target = fontFile.asFile
+        if (!target.exists() || target.length() < 20_000L) {
+            target.parentFile.mkdirs()
+            val bytes = URL("https://raw.githubusercontent.com/google/fonts/main/ofl/pirataone/PirataOne-Regular.ttf")
+                .openStream().use { it.readBytes() }
+            require(bytes.size > 20_000 && bytes[0] == 0.toByte() && bytes[1] == 1.toByte()) {
+                "Pirata One download was not a valid TrueType font"
+            }
+            target.writeBytes(bytes)
+        }
+    }
+}
+tasks.named("preBuild").configure { dependsOn(downloadPirataOneFont) }
 
 android {
     namespace = "io.github.dzarda7.espflasher"

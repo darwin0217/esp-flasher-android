@@ -2,7 +2,7 @@
 name: Build
 on:
   push:
-    branches: [main]
+    branches: [main, feature/multi-esp-safety-guide]
   pull_request:
 permissions: {}
 concurrency:
